@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Acceso administrador{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<main class="login-shell">
+  <form class="login-card" method="post">
+    <span class="eyebrow">Acceso privado</span>
+    <h1>Panel de la boda</h1>
+    <p>Ingresa la contraseña configurada en CapRover.</p>
+    <input type="password" name="password" placeholder="Contraseña" required>
+    <button type="submit">Entrar</button>
+  </form>
+</main>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ wedding.couple_names }} · Invitación{% endblock %}
+{% block body_class %}invitation-page{% endblock %}
+{% block content %}
+{% if wedding.music_url %}
+<audio id="weddingMusic" loop preload="none">
+  <source src="{{ wedding.music_url }}">
+</audio>
+<button class="music-btn" id="musicButton" type="button" aria-label="Música">♪</button>
+{% endif %}
+
+<main class="wedding-invite" data-event-date="{{ wedding.event_date }}T{{ wedding.event_time }}">
+  <section class="hero-section">
+    <div class="sand-orb orb-a"></div>
+    <div class="sand-orb orb-b"></div>
+
+    <div class="hero-image-wrap">
+      {% if wedding.hero_image %}
+        <img class="hero-image" src="{{ url_for('static', filename=wedding.hero_image) }}" alt="{{ wedding.couple_names }}">
+      {% else %}
+        <div class="image-placeholder">Foto principal de la pareja</div>
+      {% endif %}
+    </div>
+
+    <div class="hero-content reveal">
+      <span class="eyebrow">{{ wedding.short_intro }}</span>
+      <h1>{{ wedding.couple_names }}</h1>
+      <p>{{ wedding.hero_phrase }}</p>
+
+      <div class="hero-date">
+        <strong>{{ wedding.event_date }}</strong>
+        <span>{{ wedding.event_time }} · {{ wedding.dress_code }}</span>
+      </div>
+
+      <a href="#details" class="text-link">Ver detalles</a>
+    </div>
+  </section>
+
+  <section class="guest-section reveal">
+    <span class="script">Invitación especialmente preparada para</span>
+    <h2>{{ guest.guest_name }}</h2>
+    <p>{{ guest.guest_note or wedding.personal_note }}</p>
+  </section>
+
+  <section class="editorial-section reveal">
+    <div class="editorial-copy">
+      <span class="eyebrow">Con amor</span>
+      <h2>{{ wedding.story_title }}</h2>
+      <p>{{ wedding.story_text }}</p>
+    </div>
+    <div class="editorial-photos">
+      {% if wedding.couple_image_1 %}
+        <img class="photo-one" src="{{ url_for('static', filename=wedding.couple_image_1) }}" alt="Foto de la pareja">
+      {% endif %}
+      {% if wedding.couple_image_2 %}
+        <img class="photo-two" src="{{ url_for('static', filename=wedding.couple_image_2) }}" alt="Foto de la pareja">
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="countdown-section reveal">
+    <span class="eyebrow">Cuenta regresiva</span>
+    <div class="countdown" id="countdown">
+      <article><strong data-days>00</strong><span>Días</span></article>
+      <article><strong data-hours>00</strong><span>Horas</span></article>
+      <article><strong data-minutes>00</strong><span>Minutos</span></article>
+      <article><strong data-seconds>00</strong><span>Segundos</span></article>
+    </div>
+  </section>
+
+  <section class="details-section reveal" id="details">
+    <div class="details-card">
+      <span class="eyebrow">{{ wedding.ceremony_title }}</span>
+      <h2>{{ wedding.venue_name }}</h2>
+      <p>{{ wedding.venue_description }}</p>
+
+      <div class="details-grid">
+        <article><strong>Fecha</strong><span>{{ wedding.event_date }}</span></article>
+        <article><strong>Hora</strong><span>{{ wedding.event_time }}</span></article>
+        <article><strong>Vestimenta</strong><span>{{ wedding.dress_code }}</span></article>
+        <article><strong>Dirección</strong><span>{{ wedding.venue_address }}</span></article>
+      </div>
+
+      {% if wedding.maps_url %}
+      <a class="btn primary" target="_blank" href="{{ wedding.maps_url }}">Abrir ubicación</a>
+      {% endif %}
+    </div>
+
+    <div class="venue-image-wrap">
+      {% if wedding.venue_image %}
+        <img src="{{ url_for('static', filename=wedding.venue_image) }}" alt="{{ wedding.venue_name }}">
+      {% else %}
+        <div class="image-placeholder">Imagen del lugar del evento</div>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if wedding.gallery %}
+  <section class="gallery-section reveal">
+    <span class="eyebrow">Recuerdos</span>
+    <h2>Galería</h2>
+    <div class="gallery">
+      {% for img in wedding.gallery %}
+      <figure>
+        <img src="{{ url_for('static', filename=img) }}" alt="Foto de la pareja">
+      </figure>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="qr-section reveal">
+    <div>
+      <span class="eyebrow">Invitación digital</span>
+      <h2>Guarda tu acceso</h2>
+      <p>Este enlace es único para ti. Puedes guardarlo o escanear el código QR.</p>
+      <button class="btn ghost" type="button" data-copy="{{ invitation_url }}">Copiar enlace</button>
+    </div>
+    <img class="qr" src="{{ url_for('static', filename=guest.qr_filename) }}" alt="Código QR">
+  </section>
+
+  {% if wedding.rsvp_enabled %}
+  <section class="rsvp-section reveal">
+    <span class="eyebrow">Confirmación</span>
+    <h2>¿Nos acompañas?</h2>
+    {% if rsvp.status %}
+      <p class="registered">Respuesta registrada: <strong>{{ 'Asistiré' if rsvp.status == 'confirmed' else 'No podré asistir' }}</strong></p>
+    {% endif %}
+    <form method="post" action="{{ url_for('rsvp', token=token) }}">
+      <div class="radio-row">
+        <label><input type="radio" name="status" value="confirmed" checked> Asistiré</label>
+        <label><input type="radio" name="status" value="declined"> No podré asistir</label>
+      </div>
+
+      <label>Acompañantes
+        <select name="companions">
+          {% for n in range((wedding.max_companions or '0')|int + 1) %}
+            <option value="{{ n }}">{{ n }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Mensaje opcional
+        <textarea name="message" placeholder="Escribe un mensaje para la pareja"></textarea>
+      </label>
+
+      <button class="btn primary" type="submit">Enviar respuesta</button>
+    </form>
+  </section>
+  {% endif %}
+
+  <footer class="invite-footer">
+    <p>{{ wedding.couple_names }} · {{ current_year }}</p>
+  </footer>
+</main>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/invitation.js') }}"></script>
+{% endblock %}

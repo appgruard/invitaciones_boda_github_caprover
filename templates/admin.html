@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Panel de administración{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+{% block content %}
+<header class="admin-topbar">
+  <div>
+    <span class="eyebrow">Una sola boda</span>
+    <h1>Panel de administración</h1>
+    <p>Configura la invitación, carga las fotos y crea enlaces únicos con QR para tus invitados.</p>
+  </div>
+  <div class="admin-actions">
+    {% if guests %}
+      <a class="btn ghost" target="_blank" href="{{ guests[0].public_link }}">Ver invitación</a>
+    {% endif %}
+    {% if session.get('admin_ok') %}
+      <a class="btn ghost" href="{{ url_for('logout') }}">Salir</a>
+    {% endif %}
+  </div>
+</header>
+
+<main class="admin-shell">
+  <section class="stats">
+    <article><strong>{{ stats.total }}</strong><span>Invitados</span></article>
+    <article><strong>{{ stats.confirmed }}</strong><span>Confirmados</span></article>
+    <article><strong>{{ stats.pending }}</strong><span>Pendientes</span></article>
+    <article><strong>{{ stats.declined }}</strong><span>No asisten</span></article>
+  </section>
+
+  <section class="admin-grid">
+    <form class="card form-card" method="post" enctype="multipart/form-data">
+      <h2>Diseño y contenido de la invitación</h2>
+
+      <div class="two-cols">
+        <label>Nombres de la pareja
+          <input name="couple_names" value="{{ wedding.couple_names }}">
+        </label>
+        <label>Texto corto
+          <input name="short_intro" value="{{ wedding.short_intro }}">
+        </label>
+      </div>
+
+      <label>Frase principal
+        <textarea name="hero_phrase">{{ wedding.hero_phrase }}</textarea>
+      </label>
+
+      <div class="two-cols">
+        <label>Fecha
+          <input type="date" name="event_date" value="{{ wedding.event_date }}">
+        </label>
+        <label>Hora
+          <input type="time" name="event_time" value="{{ wedding.event_time }}">
+        </label>
+      </div>
+
+      <div class="two-cols">
+        <label>Dress code
+          <input name="dress_code" value="{{ wedding.dress_code }}">
+        </label>
+        <label>Máximo de acompañantes
+          <input name="max_companions" value="{{ wedding.max_companions }}">
+        </label>
+      </div>
+
+      <label>Mensaje general
+        <textarea name="personal_note">{{ wedding.personal_note }}</textarea>
+      </label>
+
+      <div class="two-cols">
+        <label>Título de historia
+          <input name="story_title" value="{{ wedding.story_title }}">
+        </label>
+        <label>Título del bloque de evento
+          <input name="ceremony_title" value="{{ wedding.ceremony_title }}">
+        </label>
+      </div>
+
+      <label>Historia / mensaje de la pareja
+        <textarea name="story_text">{{ wedding.story_text }}</textarea>
+      </label>
+
+      <h3>Lugar del evento</h3>
+      <div class="two-cols">
+        <label>Nombre del lugar
+          <input name="venue_name" value="{{ wedding.venue_name }}">
+        </label>
+        <label>Google Maps URL
+          <input name="maps_url" value="{{ wedding.maps_url }}">
+        </label>
+      </div>
+
+      <label>Dirección
+        <input name="venue_address" value="{{ wedding.venue_address }}">
+      </label>
+
+      <label>Descripción del lugar
+        <textarea name="venue_description">{{ wedding.venue_description }}</textarea>
+      </label>
+
+      <h3>Fotos</h3>
+      <div class="two-cols">
+        <label>Foto principal de la pareja
+          <input type="file" name="hero_image" accept="image/*">
+        </label>
+        <label>Foto del lugar
+          <input type="file" name="venue_image" accept="image/*">
+        </label>
+        <label>Foto secundaria pareja 1
+          <input type="file" name="couple_image_1" accept="image/*">
+        </label>
+        <label>Foto secundaria pareja 2
+          <input type="file" name="couple_image_2" accept="image/*">
+        </label>
+      </div>
+
+      <label>Galería adicional
+        <input type="file" name="gallery" accept="image/*" multiple>
+      </label>
+
+      <label>Música externa opcional
+        <input name="music_url" value="{{ wedding.music_url }}" placeholder="https://...mp3">
+      </label>
+
+      <label class="checkline">
+        <input type="checkbox" name="rsvp_enabled" {% if wedding.rsvp_enabled %}checked{% endif %}>
+        Activar confirmación de asistencia
+      </label>
+
+      {% if wedding.hero_image or wedding.venue_image or wedding.couple_image_1 or wedding.couple_image_2 or wedding.gallery %}
+      <div class="preview-grid">
+        {% for img in [wedding.hero_image, wedding.venue_image, wedding.couple_image_1, wedding.couple_image_2] if img %}
+          <img src="{{ url_for('static', filename=img) }}" alt="Foto actual">
+        {% endfor %}
+        {% for img in wedding.gallery %}
+          <label class="image-keep">
+            <img src="{{ url_for('static', filename=img) }}" alt="Galería">
+            <span><input type="checkbox" name="keep_gallery" value="{{ img }}" checked> Mantener</span>
+          </label>
+        {% endfor %}
+      </div>
+      <label class="checkline">
+        <input type="checkbox" name="clear_gallery">
+        Borrar galería completa
+      </label>
+      {% endif %}
+
+      <button class="btn primary" type="submit">Guardar invitación</button>
+    </form>
+
+    <aside class="side-stack">
+      <form class="card" method="post" action="{{ url_for('create_guest') }}">
+        <h2>Crear invitado</h2>
+        <label>Nombre o familia
+          <input name="guest_name" placeholder="Familia García" required>
+        </label>
+        <label>Mensaje personalizado
+          <textarea name="guest_note" placeholder="Opcional"></textarea>
+        </label>
+        <button class="btn primary" type="submit">Generar enlace y QR</button>
+      </form>
+
+      <div class="card">
+        <h2>Invitados</h2>
+        <div class="guest-list">
+          {% for guest in guests %}
+          <article>
+            <div>
+              <strong>{{ guest.guest_name }}</strong>
+              {% if guest.rsvp.status == 'confirmed' %}
+                <span class="pill ok">Confirmado</span>
+              {% elif guest.rsvp.status == 'declined' %}
+                <span class="pill no">No asiste</span>
+              {% else %}
+                <span class="pill pending">Pendiente</span>
+              {% endif %}
+            </div>
+            <img src="{{ url_for('static', filename=guest.qr_filename) }}" alt="QR">
+            <div class="guest-buttons">
+              <button type="button" data-copy="{{ guest.public_link }}">Copiar</button>
+              <a target="_blank" href="{{ guest.public_link }}">Abrir</a>
+            </div>
+          </article>
+          {% else %}
+            <p class="muted">Todavía no has creado invitados.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </aside>
+  </section>
+</main>
+
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+{% endblock %}
